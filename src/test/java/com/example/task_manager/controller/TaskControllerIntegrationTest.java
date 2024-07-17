@@ -1,12 +1,16 @@
 package com.example.task_manager.controller;
 
 import com.example.task_manager.model.Task;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +21,9 @@ class TaskControllerIntegrationTest
     @Autowired
     private WebTestClient webTestClient;
 
+    @Autowired
+    private ReactiveMongoTemplate reactiveMongoTemplate;
+
     private Task task;
     private Task subTask;
 
@@ -25,6 +32,14 @@ class TaskControllerIntegrationTest
     {
         subTask = new Task( "Sub Test Task", "Sub Test Task Description", new ArrayList<>() );
         task = new Task( "Main Test Task", "Main Test Task Description", new ArrayList<>( List.of( subTask ) ) );
+    }
+
+    @AfterEach
+    void cleanDatabase()
+    {
+        Flux<String> collectionNames = reactiveMongoTemplate.getCollectionNames();
+        collectionNames.flatMap( collectionName -> reactiveMongoTemplate.remove( new Query(), collectionName ) )
+                .blockLast(); // Ensure the operation completes before proceeding
     }
 
     @Test
